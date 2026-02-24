@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Activity, Quote } from 'lucide-react'
+import { Play, Activity, Quote, CheckCircle2 } from 'lucide-react' // Añadimos CheckCircle2
 import Link from 'next/link'
 
 interface Props { dailyLog: any; userId: string; }
@@ -52,11 +52,21 @@ export default function RecommendationCard({ dailyLog, userId }: Props) {
                     </div>
                 </div>
 
-                <Link href="/workout" className="w-full">
-                    <Button className={`w-full font-bold h-14 rounded-xl shadow-lg flex items-center justify-center gap-3 ${btnColor} transition-transform active:scale-95`}>
-                        <Play className="h-5 w-5 fill-current" /> IR AL GIMNASIO (MODO EJECUCIÓN)
-                    </Button>
-                </Link>
+                <div className="flex flex-col gap-3">
+                    {/* BOTÓN 1: MODO EJECUCIÓN */}
+                    <Link href="/workout" className="w-full">
+                        <Button className={`w-full font-bold h-14 rounded-xl shadow-lg flex items-center justify-center gap-3 ${btnColor} transition-transform active:scale-95`}>
+                            <Play className="h-5 w-5 fill-current" /> VER ENTRENAMIENTO
+                        </Button>
+                    </Link>
+
+                    {/* BOTÓN 2: FINALIZAR (EL QUE FALTABA) */}
+                    <Link href="/log" className="w-full">
+                        <Button variant="outline" className={`w-full font-bold h-14 rounded-xl border-2 flex items-center justify-center gap-3 transition-transform active:scale-95 ${isRecovery ? 'border-teal-200 text-teal-700 bg-white/40' : 'border-stone-700 text-stone-300 bg-transparent hover:bg-stone-800'}`}>
+                            <CheckCircle2 className="h-5 w-5" /> COMPLETAR REGISTRO DIARIO
+                        </Button>
+                    </Link>
+                </div>
             </CardContent>
         </Card>
     </div>
