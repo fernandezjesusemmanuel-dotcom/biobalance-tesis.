@@ -1,74 +1,47 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {// --- PASE VIP PARA TEST DE CONEXIÓN ---
-  // Si la ruta es /test, dejar pasar sin preguntar
-  if (request.nextUrl.pathname.startsWith('/test')) {
-    return NextResponse.next();
-  }
-  // -------------------------------------
+export async function middleware(request: NextRequest) {
+  // 1. Crear una respuesta básica
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
+  // 2. Verificar que las variables existen antes de usarlas
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Si faltan las llaves, dejamos pasar para no romper la app (y ver el error luego)
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return response
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
+  // 3. Solo protegemos las rutas que NO sean login o estáticos
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Si NO hay usuario y NO estamos en la página de login, mandar al login
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !request.nextUrl.pathname.startsWith('/login') && request.nextUrl.pathname !== '/') {
+    // Si no hay usuario, lo mandamos al login, pero permitimos la Home si quieres
     return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // Si YA hay usuario y estamos en login, mandar al dashboard (home)
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response
@@ -76,13 +49,6 @@ export async function middleware(request: NextRequest) {// --- PASE VIP PARA TES
 
 export const config = {
   matcher: [
-    /*
-     * Coincidir con todas las rutas excepto:
-     * - _next/static (archivos estáticos)
-     * - _next/image (optimización de imágenes)
-     * - favicon.ico (icono del navegador)
-     * - api (rutas API)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|test).*)',
   ],
 }
