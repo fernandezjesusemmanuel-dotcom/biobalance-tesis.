@@ -424,23 +424,3 @@ export interface Database {
     };
   };
 }
-
-// ============================================================================
-// EXPORTS CONSOLIDADOS
-// ============================================================================
-export type {
-  UserRole,
-  Gender,
-  EmploymentStatus,
-  ExerciseIntensity,
-  PreferredLocation,
-  ExerciseType,
-  User,
-  StudentProfile,
-  DailyLog,
-  PrescriptionRule,
-  Prescription,
-  AllostaticLoadInput,
-  AllostaticLoadOutput,
-  AggregatedMetrics
-};
