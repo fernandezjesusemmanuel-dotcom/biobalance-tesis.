@@ -1,77 +1,101 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Header from '@/components/dashboard/Header'
+import RecommendationCard from '@/components/dashboard/RecommendationCard'
+import TrendChart from '@/components/dashboard/TrendChart'
+import { ArrowDown, AlertTriangle, ShieldCheck, Info } from 'lucide-react'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { UserPlus, Mail, Lock, Loader2, AlertCircle, Activity } from 'lucide-react'
-import Link from 'next/link'
+export const dynamic = 'force-dynamic'
 
-export default function RegisterPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const supabase = createClient()
+export default async function Dashboard() {
+  const supabase = await createClient()
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  if (!profile || !profile.first_name || !profile.age) redirect('/onboarding')
 
-      if (error) {
-        setError(error.message)
-      } else {
-        alert("¡Cuenta creada! Revisa tu email para confirmar o intenta ingresar.")
-        router.push('/login')
-      }
-    } catch (err) {
-      setError("Error inesperado al registrar")
-    } finally {
-      setLoading(false)
+  const today = new Date().toISOString().split('T')[0]
+  
+  // 1. Obtener logs para ACWR (Últimos 28 días)
+  const { data: logs } = await supabase
+    .from('daily_logs')
+    .select('rpe_score, session_duration, log_date')
+    .eq('user_id', user.id)
+    .order('log_date', { ascending: false })
+    .limit(28)
+
+  // --- LÓGICA ACWR (Métrica de Tesis) ---
+  let acwrRatio = 0;
+  let statusMessage = "Recolectando datos...";
+  let statusColor = "bg-white text-stone-800 border-stone-100";
+
+  if (logs && logs.length >= 7) {
+    const calculateWorkload = (data: any[]) => data.reduce((acc, log) => acc + ((log.rpe_score || 0) * (log.session_duration || 0)), 0);
+    
+    const acuteLoad = calculateWorkload(logs.slice(0, 7)) / 7;
+    const chronicLoad = calculateWorkload(logs) / logs.length;
+    
+    acwrRatio = chronicLoad > 0 ? acuteLoad / chronicLoad : 0;
+
+    if (acwrRatio > 1.5) {
+        statusMessage = "Riesgo de Lesión Alto";
+        statusColor = "bg-rose-600 text-white border-rose-400";
+    } else if (acwrRatio >= 0.8 && acwrRatio <= 1.3) {
+        statusMessage = "Zona Óptima (Sweet Spot)";
+        statusColor = "bg-emerald-50 text-emerald-900 border-emerald-200";
+    } else {
+        statusMessage = "Carga en Progresión";
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-stone-100 bg-white rounded-[32px] overflow-hidden">
-        <CardHeader className="text-center space-y-4 pt-12">
-          <div className="mx-auto h-20 w-20 bg-teal-600 rounded-[22px] flex items-center justify-center transform -rotate-3">
-             <UserPlus className="h-10 w-10 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-teal-900">Crear Cuenta</CardTitle>
-          <CardDescription>Únete a BioBalance para tu seguimiento</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-10 px-8">
-          <form onSubmit={handleRegister} className="space-y-4">
-            <Input type="email" placeholder="Email" className="h-12 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input type="password" placeholder="Contraseña" className="h-12 rounded-xl" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            
-            {error && <div className="text-rose-500 text-xs flex items-center gap-2"><AlertCircle className="h-4 w-4"/> {error}</div>}
+  const { data: dailyLog } = await supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', today).single()
+  const { data: history } = await supabase.from('daily_logs').select('*').eq('user_id', user.id).order('log_date', { ascending: false }).limit(7)
 
-            <Button type="submit" className="w-full h-12 bg-teal-700 rounded-xl" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Registrarse"}
-            </Button>
-          </form>
-          <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-stone-500 hover:text-teal-700 font-medium">
-              ¿Ya tienes cuenta? Inicia sesión
-            </Link>
+  return (
+    <div className="min-h-screen bg-stone-50 pb-28">
+      <Header userName={profile?.first_name || 'Atleta'} userImage={profile?.avatar_url} userId={user.id} />
+
+      <div className="px-6 -mt-8 relative z-20 space-y-6">
+        
+        {/* WIDGET ACWR */}
+        <div className={`p-5 rounded-[32px] shadow-xl flex items-center justify-between border transition-all ${statusColor}`}>
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-2xl ${acwrRatio > 1.5 ? 'bg-rose-500/20' : 'bg-white/50'}`}>
+              {acwrRatio > 1.5 ? <AlertTriangle className="h-6 w-6 text-white" /> : <ShieldCheck className="h-6 w-6 text-teal-600" />}
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-1">
+                Ratio ACWR <Info className="h-3 w-3" />
+              </p>
+              <h4 className="font-black text-xl">{acwrRatio > 0 ? acwrRatio.toFixed(2) : "--"}</h4>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-right">
+            <p className="text-[10px] font-bold uppercase opacity-60">Estado de Carga</p>
+            <p className="text-xs font-black">{statusMessage}</p>
+          </div>
+        </div>
+
+        {dailyLog?.suggested_routine ? (
+            <RecommendationCard dailyLog={dailyLog} userId={user.id} />
+        ) : (
+            <div className="bg-white rounded-[32px] p-10 text-center shadow-xl border border-stone-100">
+                <div className="h-20 w-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">😴</div>
+                <h3 className="text-xl font-bold text-stone-800">Sin registros hoy</h3>
+                <p className="text-stone-500 text-sm mt-2">Completa tu reporte para recibir tu rutina.</p>
+                <div className="flex flex-col items-center justify-center gap-2 text-teal-600 animate-bounce mt-8">
+                    <ArrowDown className="h-6 w-6" />
+                </div>
+            </div>
+        )}
+
+        <div className="pt-4 border-t border-stone-200">
+            <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-4 ml-1">Tu Evolución</h3>
+            <TrendChart data={history || []} />
+        </div>
+      </div>
     </div>
   )
 }
