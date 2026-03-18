@@ -93,7 +93,8 @@ export default function WorkoutFeedback({ userId, logId, plannedIntensity, onClo
 
       if (dbError) throw new Error(dbError.message)
 
-      router.push('/dashboard')
+      // ✅ SOLUCIÓN AL ERROR 404: Redirigimos a la raíz '/' en lugar de '/dashboard'
+      router.push('/')
       router.refresh()
 
     } catch (e: unknown) {
