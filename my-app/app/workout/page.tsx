@@ -193,7 +193,8 @@ export default function WorkoutPage() {
     : 0
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white pb-24 relative">
+    // Agregamos pb-48 para tener suficiente espacio al final y no tapar los ejercicios
+    <div className="min-h-screen bg-stone-950 text-white pb-48 relative">
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-40 bg-stone-950/80 backdrop-blur-md border-b border-white/10 p-4 flex justify-between items-center">
@@ -336,7 +337,8 @@ export default function WorkoutPage() {
 
       {/* ── Botón flotante: Terminar ── */}
       {!loading && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-stone-950/90 backdrop-blur-md border-t border-white/5">
+        // Subimos el botón usando bottom-20 (o bottom-24 si la barra es muy grande) y z-50 para que quede siempre al frente
+        <div className="fixed bottom-24 left-0 right-0 p-4 bg-stone-950/90 backdrop-blur-md border-t border-white/5 z-50">
           <Button
             onClick={() => setShowFeedback(true)}
             disabled={!logId}
