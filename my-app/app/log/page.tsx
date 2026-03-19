@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { createClient }       from '@/lib/supabase/client'
 import { useRouter }          from 'next/navigation'
 import { Button }             from "@/components/ui/button"
-import { Moon, Battery, Gauge, ArrowLeft, Loader2, AlertCircle, Briefcase, Coffee, Mountain } from 'lucide-react'
+import { Moon, Battery, Gauge, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import Link                   from 'next/link'
 
 // ── Simulación de biomarcadores (Foster, 1998 / Shaffer, 2017) ──
@@ -24,20 +24,14 @@ export default function LogPage() {
   const [soreness, setSoreness] = useState(1)
   const [rpe,      setRpe]      = useState(5)
   const [duration, setDuration] = useState(60)
-  
-  // ── NUEVA VARIABLE: CONTEXTO DEL DÍA ──
-  const [dayContext, setDayContext] = useState('Normal')
-
   const [notes,    setNotes]    = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
-  // ── Carga interna calculada en tiempo real ───────────────
   const sRPE = rpe * duration
   const isDurationZero = duration === 0
 
   const handleSave = async () => {
-    // Validación cliente antes de tocar la red
     if (isDurationZero) {
       setError('La duración no puede ser 0. Es necesaria para calcular la Carga Interna (sRPE).')
       return
@@ -62,9 +56,7 @@ export default function LogPage() {
         soreness_level:   soreness,
         rpe_score:        rpe,
         session_duration: duration,
-        day_context:      dayContext, // ✅ Se guarda en Supabase
         notes,
-        // Biomarcadores simulados guardados para trazabilidad de tesis
         simulated_rmssd:         rmssd,
         simulated_srpe_previous: sRPE_previous,
       }, { onConflict: 'user_id, log_date' })
@@ -76,7 +68,6 @@ export default function LogPage() {
 
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al guardar. Verifica tu conexión.')
-      console.error('❌ LogPage handleSave:', e)
     } finally {
       setLoading(false)
     }
@@ -94,49 +85,6 @@ export default function LogPage() {
       </div>
 
       <div className="space-y-6 max-w-lg mx-auto">
-
-        {/* ── NUEVO BLOQUE: Contexto del Día ── */}
-        <div className="bg-white p-5 rounded-3xl shadow-sm border border-stone-100">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">
-            Contexto de tu jornada
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => setDayContext('Libre')}
-              className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                dayContext === 'Libre' 
-                  ? 'border-teal-500 bg-teal-50 text-teal-700' 
-                  : 'border-transparent bg-stone-50 text-stone-500 hover:bg-stone-100'
-              }`}
-            >
-              <Coffee className="h-5 w-5 mb-1" />
-              <span className="text-[10px] font-bold uppercase">Día Libre</span>
-            </button>
-            <button
-              onClick={() => setDayContext('Normal')}
-              className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                dayContext === 'Normal' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-transparent bg-stone-50 text-stone-500 hover:bg-stone-100'
-              }`}
-            >
-              <Briefcase className="h-5 w-5 mb-1" />
-              <span className="text-[10px] font-bold uppercase">Normal</span>
-            </button>
-            <button
-              onClick={() => setDayContext('Pesado')}
-              className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                dayContext === 'Pesado' 
-                  ? 'border-amber-500 bg-amber-50 text-amber-700' 
-                  : 'border-transparent bg-stone-50 text-stone-500 hover:bg-stone-100'
-              }`}
-            >
-              <Mountain className="h-5 w-5 mb-1" />
-              <span className="text-[10px] font-bold uppercase">Pesado</span>
-            </button>
-          </div>
-        </div>
-
         {/* ── Bloque de entrenamiento ── */}
         <div className="bg-stone-900 text-white p-6 rounded-[32px] shadow-2xl space-y-6">
           <div className="flex items-center gap-2 border-b border-white/10 pb-3">
@@ -146,7 +94,6 @@ export default function LogPage() {
             </h3>
           </div>
 
-          {/* RPE */}
           <div className="space-y-3">
             <div className="flex justify-between items-end">
               <label className="text-xs font-bold text-stone-500 uppercase">Esfuerzo (RPE)</label>
@@ -159,7 +106,6 @@ export default function LogPage() {
             />
           </div>
 
-          {/* Duración */}
           <div className="space-y-3 pt-2">
             <div className="flex justify-between items-end">
               <label className="text-xs font-bold text-stone-500 uppercase">Duración</label>
@@ -174,7 +120,6 @@ export default function LogPage() {
             />
           </div>
 
-          {/* Carga interna en tiempo real */}
           <div className="flex justify-between items-center bg-white/5 rounded-2xl px-4 py-3 border border-white/10">
             <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
               Carga Interna (sRPE)
@@ -211,7 +156,6 @@ export default function LogPage() {
           </div>
         </div>
 
-        {/* ── Error inline (reemplaza alert) ── */}
         {error && (
           <div className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -229,12 +173,6 @@ export default function LogPage() {
             : 'Guardar y Ver Diagnóstico'
           }
         </Button>
-
-        {isDurationZero && (
-          <p className="text-center text-xs text-stone-400">
-            Ajusta la duración para habilitar el guardado.
-          </p>
-        )}
       </div>
     </div>
   )
