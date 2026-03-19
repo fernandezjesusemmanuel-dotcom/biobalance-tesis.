@@ -188,12 +188,12 @@ export default function WorkoutPage() {
     reset()
   }, [reset])
 
-  const progressPct = plan?.exercises.length
-    ? Math.round((completedExercises.size / plan.exercises.length) * 100)
+  const totalExercises = plan?.exercises.length ?? 0
+  const progressPct = totalExercises > 0
+    ? Math.round((completedExercises.size / totalExercises) * 100)
     : 0
 
   return (
-    // Agregamos pb-48 para tener suficiente espacio al final y no tapar los ejercicios
     <div className="min-h-screen bg-stone-950 text-white pb-48 relative">
 
       {/* ── Header ── */}
@@ -206,9 +206,8 @@ export default function WorkoutPage() {
         <span className="text-xs font-bold tracking-widest text-teal-500 uppercase flex items-center gap-2">
           <Activity className="h-4 w-4" /> Modo Ejecución
         </span>
-        {/* Progreso visual en el header */}
         <span className="text-xs font-bold text-stone-400">
-          {completedExercises.size}/{plan?.exercises.length ?? 0}
+          {completedExercises.size}/{totalExercises}
         </span>
       </div>
 
@@ -271,7 +270,6 @@ export default function WorkoutPage() {
 
         {plan && !loading && (
           <>
-            {/* Título e intensidad */}
             <div className="bg-stone-900 rounded-2xl p-4 border border-stone-800">
               <div className="flex justify-between items-start mb-2">
                 <h2 className="text-lg font-black text-white leading-tight flex-1">{plan.title}</h2>
@@ -286,8 +284,7 @@ export default function WorkoutPage() {
               <p className="text-xs text-stone-400 leading-relaxed">{plan.justification}</p>
             </div>
 
-            {/* Barra de progreso */}
-            {plan.exercises.length > 0 && (
+            {totalExercises > 0 && (
               <div>
                 <div className="flex justify-between text-[10px] text-stone-500 mb-1.5 font-bold">
                   <span>PROGRESO</span>
@@ -302,7 +299,6 @@ export default function WorkoutPage() {
               </div>
             )}
 
-            {/* Ejercicios principales */}
             <div className="space-y-2">
               {plan.exercises.map((ex, i) => (
                 <ExerciseCard
@@ -315,7 +311,6 @@ export default function WorkoutPage() {
               ))}
             </div>
 
-            {/* Opcional */}
             {plan.optional && (
               <div className="bg-stone-900/50 rounded-xl p-4 border border-stone-800/50 border-dashed">
                 <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">
@@ -337,14 +332,16 @@ export default function WorkoutPage() {
 
       {/* ── Botón flotante: Terminar ── */}
       {!loading && (
-        // Subimos el botón usando bottom-20 (o bottom-24 si la barra es muy grande) y z-50 para que quede siempre al frente
         <div className="fixed bottom-24 left-0 right-0 p-4 bg-stone-950/90 backdrop-blur-md border-t border-white/5 z-50">
           <Button
             onClick={() => setShowFeedback(true)}
-            disabled={!logId}
+            disabled={!logId || completedExercises.size !== totalExercises}
             className="w-full h-14 bg-teal-600 hover:bg-teal-500 text-white font-black text-base rounded-2xl disabled:opacity-40"
           >
-            Terminar y Cerrar Bucle IA
+            {completedExercises.size !== totalExercises
+              ? `Completa los ejercicios (${completedExercises.size}/${totalExercises})`
+              : 'Finalizar Entrenamiento'
+            }
           </Button>
           {!logId && (
             <p className="text-center text-[10px] text-stone-600 mt-1">
@@ -354,7 +351,7 @@ export default function WorkoutPage() {
         </div>
       )}
 
-      {/* ── Modal: WorkoutFeedback (Inferencia Activa) ── */}
+      {/* ── Modal: WorkoutFeedback ── */}
       {showFeedback && logId && userId && (
         <WorkoutFeedback
           userId={userId}
