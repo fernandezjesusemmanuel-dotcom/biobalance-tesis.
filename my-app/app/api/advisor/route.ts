@@ -132,7 +132,7 @@ export async function POST(req: Request) {
   }
 
   // ✅ FIX: URL construida aquí, solo cuando la key está confirmada
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   // ── Validación del input ─────────────────────────────────
   let input: z.infer<typeof InputSchema>;
