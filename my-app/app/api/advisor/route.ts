@@ -121,8 +121,9 @@ export async function POST(req: Request) {
     return NextResponse.json(OFFLINE_FALLBACK, { status: 200 });
   }
 
-  // ✅ FIX CRÍTICO: Usamos gemini-1.5-flash (v1) para evitar el error 404
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // ✅ FIX CRÍTICO: Usamos gemini-2.5-flash para máxima estabilidad 
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
   let input: z.infer<typeof InputSchema>;
   try {
     const rawBody = await req.json();
@@ -159,7 +160,8 @@ export async function POST(req: Request) {
       signal:  controller.signal,
       body: JSON.stringify({
         contents:         [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+        // ✅ CORRECCIÓN APLICADA: maxOutputTokens incrementado a 4096 para permitir JSON completo
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.4 },
       }),
     });
 
