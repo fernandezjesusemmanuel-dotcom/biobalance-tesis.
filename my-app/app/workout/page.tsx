@@ -336,11 +336,11 @@ export default function WorkoutPage() {
           <Button
             onClick={() => setShowFeedback(true)}
             disabled={!logId || completedExercises.size !== totalExercises}
-            className="w-full h-14 bg-teal-600 hover:bg-teal-500 text-white font-black text-base rounded-2xl disabled:opacity-40"
+            className="w-full h-14 bg-teal-600 hover:bg-teal-500 text-white font-black text-base rounded-2xl disabled:opacity-40 transition-all duration-300"
           >
             {completedExercises.size !== totalExercises
               ? `Completa los ejercicios (${completedExercises.size}/${totalExercises})`
-              : 'Finalizar Entrenamiento'
+              : 'Terminar y Cerrar Bucle IA'
             }
           </Button>
           {!logId && (

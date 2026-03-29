@@ -19,11 +19,6 @@ const InputSchema = z.object({
   ),
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 2. TIPOS — extraídos del schema para reutilizar en buildPrompt
-// ✅ FIX: dayContext tipado como literal, no string genérico.
-//    TypeScript detectará usos incorrectos en compile time.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 type DayContext = 'Libre' | 'Normal' | 'Pesado'
 
 interface PromptParams {
@@ -35,11 +30,11 @@ interface PromptParams {
   sRPE_previous: number
   envContext:    string
   userContext:   string
-  dayContext:    DayContext  // ✅ tipo estricto en lugar de string
+  dayContext:    DayContext 
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. RENDIMIENTO: Prompt extraído como función pura
+// 2. RENDIMIENTO: Prompt extraído como función pura
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function buildPrompt(p: PromptParams): string {
   return `Eres un Magíster en Educación Física especializado en Neurociencia Computacional y Fisiología del Ejercicio.
@@ -90,19 +85,11 @@ RESPONDE ÚNICAMENTE CON JSON VÁLIDO — sin markdown, sin backticks, sin texto
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 4. SEGURIDAD: API Key validada una sola vez al inicio
-// ✅ FIX: GEMINI_URL se construye DENTRO del handler, no aquí.
-//    Si se construye en el módulo con key=undefined, esa URL
-//    incorrecta queda en memoria aunque nunca se use.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 5. RENDIMIENTO: Fallback offline tipado
+// 3. RENDIMIENTO: Fallback offline tipado
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const OFFLINE_FALLBACK = {
   motivational_message:
-    "El sistema de IA no está disponible en este momento. Aquí tienes una sesión segura por defecto.",
+    "El sistema de IA está descansando. Aquí tienes una sesión segura por defecto.",
   main: {
     type:          "Recuperación Activa",
     intensity:     "Baja",
@@ -126,15 +113,17 @@ const OFFLINE_FALLBACK = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export async function POST(req: Request) {
 
+  // ✅ FIX: Leer la variable de entorno ADENTRO del handler 
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
+
   if (!GEMINI_API_KEY) {
     console.error("🔴 GEMINI_API_KEY no configurada.");
     return NextResponse.json(OFFLINE_FALLBACK, { status: 200 });
   }
 
-  // ✅ FIX: URL construida aquí, solo cuando la key está confirmada
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // ✅ FIX CRÍTICO: Usamos gemini-1.5-flash (v1) para evitar el error 404
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-  // ── Validación del input ─────────────────────────────────
   let input: z.infer<typeof InputSchema>;
   try {
     const rawBody = await req.json();
@@ -159,7 +148,6 @@ export async function POST(req: Request) {
     rmssd, sRPE_previous, envContext, userContext, dayContext,
   });
 
-  // ── Timeout ──────────────────────────────────────────────
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 15_000);
 
@@ -176,9 +164,6 @@ export async function POST(req: Request) {
       }),
     });
 
-    // ✅ FIX: clearTimeout en TODOS los paths de retorno,
-    //    no solo en el catch. Sin esto el timer queda activo
-    //    hasta los 15s aunque Gemini ya respondió.
     clearTimeout(timeout);
 
     if (!response.ok) {
