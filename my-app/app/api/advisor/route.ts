@@ -122,8 +122,7 @@ export async function POST(req: Request) {
   }
 
   // ✅ FIX CRÍTICO: Usamos gemini-1.5-flash (v1) para evitar el error 404
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   let input: z.infer<typeof InputSchema>;
   try {
     const rawBody = await req.json();
