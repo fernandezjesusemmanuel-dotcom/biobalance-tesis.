@@ -22,7 +22,7 @@ interface Props {
 // HELPERS CIENTÍFICOS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getSRPEClassification(sRPE: number) {
-  if (sRPE < 150)  return { label: 'Carga Baja',    color: 'text-teal-700',   bg: 'bg-teal-50'  }
+  if (sRPE < 150)  return { label: 'Carga Baja',     color: 'text-teal-700',   bg: 'bg-teal-50'  }
   if (sRPE < 300)  return { label: 'Carga Moderada', color: 'text-blue-700',   bg: 'bg-blue-50'  }
   if (sRPE < 450)  return { label: 'Carga Alta',     color: 'text-amber-700',  bg: 'bg-amber-50' }
   return             { label: 'Carga Muy Alta',  color: 'text-rose-700',   bg: 'bg-rose-50'  }
