@@ -6,19 +6,17 @@ import { Button }             from "@/components/ui/button"
 import { Slider }             from "@/components/ui/slider"
 import { createClient }       from '@/lib/supabase/client'
 import { useRouter }          from 'next/navigation'
-import { Moon, Zap, Activity, HeartPulse, MapPin, Loader2, AlertCircle, Coffee, Briefcase, Mountain } from 'lucide-react'
+import { Moon, Zap, Activity, HeartPulse, MapPin, Loader2, AlertCircle, Coffee, Briefcase, Mountain, Brain, ArrowRight } from 'lucide-react'
 import VoiceLogger            from './VoiceLogger'
+// ✅ Importamos la tarjeta que creamos antes
+import { AnalysisPreviewCard } from '@/components/AnalysisPreviewCard'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TIPOS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 interface Props { userId: string }
-
 interface WeatherData { temperature: number; weathercode?: number }
-
 type LocationStatus = 'searching' | 'found' | 'error'
-
-// ✅ Union type en lugar de string — TypeScript puede validar los valores
 type DayContext = 'Libre' | 'Normal' | 'Pesado'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -30,17 +28,13 @@ function simulateBiomarkers(stress: number, fatigue: number) {
   return { rmssd, sRPE_previous }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CONSTANTE: Configuración de botones de contexto
-// Extraída del JSX para evitar repetición y facilitar cambios
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const DAY_CONTEXTS: {
   value:       DayContext
   label:       string
   icon:        React.ReactNode
   activeClass: string
 }[] = [
-  { value: 'Libre',  label: 'Día Libre', icon: <Coffee    className="h-5 w-5 mb-1" />, activeClass: 'border-teal-500  bg-teal-50  text-teal-700'  },
+  { value: 'Libre',  label: 'Día Libre', icon: <Coffee     className="h-5 w-5 mb-1" />, activeClass: 'border-teal-500  bg-teal-50  text-teal-700'  },
   { value: 'Normal', label: 'Normal',    icon: <Briefcase className="h-5 w-5 mb-1" />, activeClass: 'border-blue-500  bg-blue-50  text-blue-700'  },
   { value: 'Pesado', label: 'Pesado',    icon: <Mountain  className="h-5 w-5 mb-1" />, activeClass: 'border-amber-500 bg-amber-50 text-amber-700' },
 ]
@@ -102,16 +96,17 @@ interface SliderFieldProps {
   icon:       React.ReactNode
   colorClass: string
   textClass:  string
+  disabled?:  boolean
 }
 
-function SliderField({ label, value, onChange, max, step, unit = '/10', icon, colorClass, textClass }: SliderFieldProps) {
+function SliderField({ label, value, onChange, max, step, unit = '/10', icon, colorClass, textClass, disabled }: SliderFieldProps) {
   return (
     <div className={`${colorClass} p-3 rounded-xl`}>
       <div className="flex justify-between mb-2">
         <span className={`text-xs font-bold ${textClass} flex items-center gap-1`}>{icon} {label}</span>
         <span className="text-xs font-bold">{value[0]}{unit}</span>
       </div>
-      <Slider value={value} onValueChange={onChange} max={max} step={step} />
+      <Slider value={value} onValueChange={onChange} max={max} step={step} disabled={disabled} />
     </div>
   )
 }
@@ -120,27 +115,29 @@ function SliderField({ label, value, onChange, max, step, unit = '/10', icon, co
 // COMPONENTE PRINCIPAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export default function BalanceCard({ userId }: Props) {
-  // ✅ useMemo: evita recrear el cliente Supabase en cada render
   const supabase = useMemo(() => createClient(), [])
   const router   = useRouter()
   const { weatherData, locationName, locationStatus } = useLocationAndWeather()
 
-  const [step,       setStep]       = useState<1 | 2>(1)
-  const [loading,    setLoading]    = useState(false)
-  const [error,      setError]      = useState<string | null>(null)
-  const [sleep,      setSleep]      = useState([7])
-  const [stress,     setStress]     = useState([5])
-  const [fatigue,    setFatigue]    = useState([5])
-  const [soreness,   setSoreness]   = useState([2])
-  const [dayContext, setDayContext]  = useState<DayContext>('Normal')
+  const [step,           setStep]           = useState<1 | 2>(1)
+  const [loading,        setLoading]        = useState(false)
+  const [error,          setError]          = useState<string | null>(null)
+  const [sleep,          setSleep]          = useState([7])
+  const [stress,         setStress]         = useState([5])
+  const [fatigue,        setFatigue]        = useState([5])
+  const [soreness,       setSoreness]       = useState([2])
+  const [dayContext,     setDayContext]     = useState<DayContext>('Normal')
+  
+  // ✅ NUEVO ESTADO PARA MOSTRAR EL RESULTADO SIN NAVEGAR TODAVÍA
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
 
   useEffect(() => { setError(null) }, [sleep, stress, fatigue, soreness, dayContext])
 
   const handleVoiceProcessed = useCallback((data: any) => {
     if (!data) return
-    if (data.sleep    !== undefined) setSleep([data.sleep])
-    if (data.stress   !== undefined) setStress([data.stress])
-    if (data.fatigue  !== undefined) setFatigue([data.fatigue])
+    if (data.sleep     !== undefined) setSleep([data.sleep])
+    if (data.stress    !== undefined) setStress([data.stress])
+    if (data.fatigue   !== undefined) setFatigue([data.fatigue])
     if (data.soreness !== undefined) setSoreness([data.soreness])
     setTimeout(() => setStep(2), 500)
   }, [])
@@ -184,10 +181,8 @@ export default function BalanceCard({ userId }: Props) {
         .eq('log_date', today)
       if (routineErr) throw new Error("Error guardando rutina: " + routineErr.message)
 
-      // ✅ push primero, refresh después — evita navegar a una página
-      // que todavía está mostrando datos desactualizados del caché
-      router.push('/workout')
-      router.refresh()
+      // ✅ EN LUGAR DE REDIRIGIR, GUARDAMOS EL RESULTADO PARA MOSTRAR LA TARJETA
+      setAnalysisResult(recommendation)
 
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido")
@@ -198,98 +193,125 @@ export default function BalanceCard({ userId }: Props) {
   }
 
   return (
-    <Card className="border-none shadow-lg bg-white overflow-hidden">
-      <CardContent className="p-6">
+    <div className="space-y-6">
+      <Card className="border-none shadow-lg bg-white overflow-hidden">
+        <CardContent className="p-6">
 
-        {/* ── Header ── */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-stone-800">Check-in Diario</h2>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100 max-w-[90%] truncate">
-                {locationStatus === 'searching'
-                  ? <Loader2 className="h-3 w-3 animate-spin shrink-0" />
-                  : <MapPin   className="h-3 w-3 shrink-0" />
-                }
-                <span className="truncate">{locationName}</span>
+          {/* ── Header ── */}
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-stone-800">Check-in Diario</h2>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100 max-w-[90%] truncate">
+                  {locationStatus === 'searching'
+                    ? <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                    : <MapPin   className="h-3 w-3 shrink-0" />
+                  }
+                  <span className="truncate">{locationName}</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* ── Step 1: Voz ── */}
+          {step === 1 ? (
+            <div className="space-y-4">
+              <div className="bg-stone-50 p-6 rounded-2xl border border-stone-100 text-center">
+                <p className="text-stone-500 text-sm mb-4 font-medium uppercase tracking-wide">
+                  Asistente de Prior Bayesiano
+                </p>
+                <h3 className="text-lg font-bold text-stone-800 mb-2">¿Cómo responde tu cuerpo hoy?</h3>
+                <VoiceLogger onProcessed={handleVoiceProcessed} />
+                <p className="text-xs text-stone-400 mt-4 italic">"Dime: Dormí 6 horas pero me siento fuerte..."</p>
+              </div>
+              <Button variant="ghost" className="w-full text-stone-400 text-xs" onClick={() => setStep(2)}>
+                Entrada manual de biomarcadores
+              </Button>
+            </div>
+
+          ) : (
+            /* ── Step 2: Contexto + Sliders + Confirmar ── */
+            <div className="space-y-6 animate-in slide-in-from-right-4 fade-in">
+
+              {/* Selector de Contexto */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">
+                  Contexto de tu jornada
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {DAY_CONTEXTS.map(({ value, label, icon, activeClass }) => (
+                    <button
+                      key={value}
+                      onClick={() => setDayContext(value)}
+                      disabled={!!analysisResult} // Bloqueamos si ya se analizó
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
+                        dayContext === value
+                          ? activeClass
+                          : 'border-transparent bg-stone-50 text-stone-500 hover:bg-stone-100'
+                      } ${analysisResult ? 'opacity-50' : ''}`}
+                    >
+                      {icon}
+                      <span className="text-[10px] font-bold uppercase">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sliders Biométricos */}
+              <div className="grid grid-cols-2 gap-4">
+                <SliderField label="Sueño"  value={sleep}    onChange={setSleep}    max={12} step={0.5} unit="h" icon={<Moon      className="h-3 w-3" />} colorClass="bg-blue-50"   textClass="text-blue-700" disabled={!!analysisResult} />
+                <SliderField label="Estrés" value={stress}   onChange={setStress}   max={10} step={1}            icon={<Zap       className="h-3 w-3" />} colorClass="bg-amber-50"  textClass="text-amber-700" disabled={!!analysisResult} />
+                <SliderField label="Fatiga" value={fatigue}  onChange={setFatigue}  max={10} step={1}            icon={<Activity  className="h-3 w-3" />} colorClass="bg-stone-100" textClass="text-stone-600" disabled={!!analysisResult} />
+                <SliderField label="Dolor"  value={soreness} onChange={setSoreness} max={10} step={1}            icon={<HeartPulse className="h-3 w-3" />} colorClass="bg-rose-50"   textClass="text-rose-700"  disabled={!!analysisResult} />
+              </div>
+
+              {/* Error inline */}
+              {error && (
+                <div className="flex items-start gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Botón de Acción Principal */}
+              {!analysisResult ? (
+                <Button
+                  className="w-full bg-stone-900 text-white font-bold h-12 rounded-xl"
+                  onClick={handleConfirm}
+                  disabled={loading}
+                >
+                  {loading
+                    ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Calculando Inferencia Activa...</>
+                    : <><Brain className="mr-2 h-4 w-4" /> Procesar Plan IA</>
+                  }
+                </Button>
+              ) : (
+                <div className="text-center p-2 bg-teal-50 border border-teal-100 rounded-xl text-teal-700 text-xs font-bold uppercase tracking-widest">
+                  Análisis completado con éxito
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── SECCIÓN FINAL: PREVISUALIZACIÓN Y NAVEGACIÓN ── */}
+      {analysisResult && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <AnalysisPreviewCard plan={analysisResult.main} />
+          
+          <Button 
+            onClick={() => {
+              router.push('/workout')
+              router.refresh()
+            }}
+            className="w-full bg-teal-600 hover:bg-teal-500 text-white font-black h-16 rounded-2xl text-base shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2 group"
+          >
+            INICIAR MODO EJECUCIÓN 
+            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
         </div>
-
-        {/* ── Step 1: Voz ── */}
-        {step === 1 ? (
-          <div className="space-y-4">
-            <div className="bg-stone-50 p-6 rounded-2xl border border-stone-100 text-center">
-              <p className="text-stone-500 text-sm mb-4 font-medium uppercase tracking-wide">
-                Asistente de Prior Bayesiano
-              </p>
-              <h3 className="text-lg font-bold text-stone-800 mb-2">¿Cómo responde tu cuerpo hoy?</h3>
-              <VoiceLogger onProcessed={handleVoiceProcessed} />
-              <p className="text-xs text-stone-400 mt-4 italic">"Dime: Dormí 6 horas pero me siento fuerte..."</p>
-            </div>
-            <Button variant="ghost" className="w-full text-stone-400 text-xs" onClick={() => setStep(2)}>
-              Entrada manual de biomarcadores
-            </Button>
-          </div>
-
-        ) : (
-          /* ── Step 2: Contexto + Sliders + Confirmar ── */
-          <div className="space-y-6 animate-in slide-in-from-right-4 fade-in">
-
-            {/* ── Selector de Contexto del Día ── */}
-            <div>
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">
-                Contexto de tu jornada
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {DAY_CONTEXTS.map(({ value, label, icon, activeClass }) => (
-                  <button
-                    key={value}
-                    onClick={() => setDayContext(value)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                      dayContext === value
-                        ? activeClass
-                        : 'border-transparent bg-stone-50 text-stone-500 hover:bg-stone-100'
-                    }`}
-                  >
-                    {icon}
-                    <span className="text-[10px] font-bold uppercase">{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Sliders Biométricos ── */}
-            <div className="grid grid-cols-2 gap-4">
-              <SliderField label="Sueño"  value={sleep}    onChange={setSleep}    max={12} step={0.5} unit="h" icon={<Moon      className="h-3 w-3" />} colorClass="bg-blue-50"   textClass="text-blue-700"  />
-              <SliderField label="Estrés" value={stress}   onChange={setStress}   max={10} step={1}            icon={<Zap       className="h-3 w-3" />} colorClass="bg-amber-50"  textClass="text-amber-700" />
-              <SliderField label="Fatiga" value={fatigue}  onChange={setFatigue}  max={10} step={1}            icon={<Activity  className="h-3 w-3" />} colorClass="bg-stone-100" textClass="text-stone-600" />
-              <SliderField label="Dolor"  value={soreness} onChange={setSoreness} max={10} step={1}            icon={<HeartPulse className="h-3 w-3" />} colorClass="bg-rose-50"  textClass="text-rose-700"  />
-            </div>
-
-            {/* ── Error inline ── */}
-            {error && (
-              <div className="flex items-start gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-100 rounded-xl p-3">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <Button
-              className="w-full bg-stone-900 text-white font-bold h-12 rounded-xl"
-              onClick={handleConfirm}
-              disabled={loading}
-            >
-              {loading
-                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Calculando Inferencia Activa...</>
-                : 'Procesar Plan IA'
-              }
-            </Button>
-          </div>
-        )}
-
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

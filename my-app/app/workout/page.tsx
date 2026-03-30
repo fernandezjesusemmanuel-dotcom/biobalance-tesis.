@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from "@/components/ui/button"
-import { Play, Pause, RotateCcw, ChevronLeft, Watch, Timer, Activity, AlertCircle, Loader2 } from 'lucide-react'
+// ✅ Importé el ícono 'Video'
+import { Play, Pause, RotateCcw, ChevronLeft, Watch, Timer, Activity, AlertCircle, Loader2, Video } from 'lucide-react'
 import Link from 'next/link'
 import WorkoutFeedback from '@/app/workout/WorkoutFeedback'
 
@@ -17,6 +18,7 @@ type Intensity = 'Baja' | 'Media' | 'Alta'
 interface Exercise {
   name: string
   sets: string
+  videoUrl?: string // ✅ Nueva propiedad para el link de YouTube
 }
 
 interface WorkoutPlan {
@@ -42,7 +44,7 @@ const FALLBACK_PLAN: WorkoutPlan = {
   type: "Mantenimiento",
   intensity: "Media",
   justification: "Sin log de hoy. Sesión libre de mantenimiento.",
-  exercises: [{ name: "Movilidad general", sets: "10 min" }],
+  exercises: [{ name: "Movilidad general", sets: "10 min", videoUrl: "https://www.youtube.com/results?search_query=rutina+movilidad+general" }],
   optional: null,
 }
 
@@ -85,7 +87,7 @@ function ExerciseCard({
   return (
     <button
       onClick={onToggle}
-      className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
+      className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex justify-between items-center ${
         completed
           ? 'bg-teal-900/40 border-teal-700/50 opacity-60'
           : 'bg-stone-900 border-stone-800 hover:border-stone-600'
@@ -101,13 +103,26 @@ function ExerciseCard({
             </svg>
           )}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pr-2">
           <p className={`text-sm font-bold ${completed ? 'line-through text-stone-500' : 'text-white'}`}>
             {index + 1}. {exercise.name}
           </p>
           <p className="text-xs text-teal-400 font-mono mt-0.5">{exercise.sets}</p>
         </div>
       </div>
+
+      {/* ✅ Botón de la cámara de video agregado aquí */}
+      {exercise.videoUrl && (
+        <a
+          href={exercise.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()} // Evita que se marque el ejercicio al hacer clic en el video
+          className="p-2 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition-colors flex-shrink-0"
+        >
+          <Video className="w-4 h-4" />
+        </a>
+      )}
     </button>
   )
 }
@@ -319,8 +334,16 @@ export default function WorkoutPage() {
                 <p className="text-xs font-bold text-stone-300 mb-1">{plan.optional.type}</p>
                 <p className="text-[11px] text-stone-500 mb-3">{plan.optional.desc}</p>
                 {plan.optional.exercises.map((ex, i) => (
-                  <div key={i} className="flex justify-between text-xs text-stone-400">
-                    <span>{ex.name}</span>
+                  <div key={i} className="flex justify-between items-center text-xs text-stone-400 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span>{ex.name}</span>
+                      {/* ✅ Camarita para los opcionales */}
+                      {ex.videoUrl && (
+                        <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-teal-500 hover:text-teal-400">
+                          <Video className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
                     <span className="font-mono text-teal-500">{ex.sets}</span>
                   </div>
                 ))}

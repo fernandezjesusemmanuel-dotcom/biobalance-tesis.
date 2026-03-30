@@ -28,13 +28,18 @@ export default function LoginPage() {
       })
 
       if (error) {
-        setError(error.message)
+        // Traducción de errores comunes para el estudiante
+        const friendlyError = error.message === "Invalid login credentials" 
+          ? "Credenciales incorrectas. Revisa tu email y contraseña." 
+          : error.message
+        setError(friendlyError)
       } else {
+        // Redirección con refresco para limpiar estados de auth
         router.push('/') 
         router.refresh()
       }
     } catch (err) {
-      setError("Error inesperado")
+      setError("Error inesperado en la conexión")
     } finally {
       setLoading(false)
     }
@@ -44,50 +49,78 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
       <Card className="w-full max-w-md shadow-2xl border-stone-100 bg-white rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-500">
         <CardHeader className="text-center space-y-4 pt-12 pb-2">
+          {/* Logo BioBalance con rotación dinámica */}
           <div className="mx-auto h-28 w-28 bg-gradient-to-br from-teal-500 to-emerald-700 rounded-[28px] shadow-2xl shadow-teal-900/20 flex items-center justify-center transform rotate-3 hover:rotate-0 transition-all duration-500">
              <Activity className="h-14 w-14 text-white drop-shadow-md" strokeWidth={2.5} />
           </div>
           <div className="space-y-1 mt-4">
-            <CardTitle className="text-3xl font-bold text-teal-900 tracking-tight">BioBalance</CardTitle>
-            <CardDescription className="text-stone-500 font-medium">Plataforma de Tesis • Gestión de Carga</CardDescription>
+            <CardTitle className="text-3xl font-black text-teal-900 tracking-tight">BioBalance</CardTitle>
+            <CardDescription className="text-stone-500 font-bold uppercase text-[10px] tracking-widest">
+              Gestión de Burnout Académico • 2026
+            </CardDescription>
           </div>
         </CardHeader>
 
         <CardContent className="pb-10 px-8 pt-6">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest pl-1">Email Institucional</label>
+              <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest pl-1">Email Institucional</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-3.5 h-4 w-4 text-stone-400 group-focus-within:text-teal-600 transition-colors" />
-                <Input type="email" placeholder="alumno@biobalance.ar" className="pl-10 h-12 bg-stone-50 border-stone-200 focus:ring-teal-500 rounded-xl" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input 
+                  type="email" 
+                  placeholder="alumno@biobalance.ar" 
+                  className="pl-10 h-12 bg-stone-50 border-stone-200 focus:ring-teal-500 rounded-xl font-medium" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required 
+                />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest pl-1">Contraseña</label>
+              <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest pl-1">Contraseña</label>
               <div className="relative group">
                 <Lock className="absolute left-3 top-3.5 h-4 w-4 text-stone-400 group-focus-within:text-teal-600 transition-colors" />
-                <Input type="password" placeholder="••••••••" className="pl-10 h-12 bg-stone-50 border-stone-200 focus:ring-teal-500 rounded-xl" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  className="pl-10 h-12 bg-stone-50 border-stone-200 focus:ring-teal-500 rounded-xl" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                />
               </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold rounded-xl flex items-center gap-2">
+              <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-bold rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                   <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{error === "Invalid login credentials" ? "Credenciales incorrectas" : error}</span>
+                  <span>{error}</span>
               </div>
             )}
 
-            <Button type="submit" className="w-full h-12 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-lg mt-4" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ingresar al Sistema"}
+            <Button 
+              type="submit" 
+              className="w-full h-14 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-2xl shadow-xl shadow-teal-900/10 mt-4 transition-all active:scale-[0.98]" 
+              disabled={loading}
+            >
+              {loading ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> VALIDANDO...</>
+              ) : (
+                "INGRESAR AL SISTEMA"
+              )}
             </Button>
           </form>
 
-          {/* BOTÓN DE REGISTRO AÑADIDO */}
+          {/* Sección de Registro */}
           <div className="mt-8 text-center border-t border-stone-100 pt-6">
-            <p className="text-stone-500 text-sm">
-              ¿No tienes una cuenta?{' '}
-              <button onClick={() => router.push('/register')} className="text-teal-700 font-bold hover:underline">
+            <p className="text-stone-400 text-xs font-medium">
+              ¿Eres nuevo en el estudio?{' '}
+              <button 
+                onClick={() => router.push('/register')} 
+                className="text-teal-700 font-black hover:underline underline-offset-4"
+              >
                 Regístrate aquí
               </button>
             </p>

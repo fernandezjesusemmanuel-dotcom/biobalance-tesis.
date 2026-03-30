@@ -59,6 +59,7 @@ INSTRUCCIONES GENERALES:
 1. Analiza el estado del atleta considerando todos los biomarcadores y su Contexto de la Jornada.
 2. Prescribe una sesión (Carga Externa) que devuelva al atleta a la homeostasis óptima.
 3. Justifica con términos técnicos (Inferencia Activa, rMSSD, sRPE, carga alostática, contexto laboral).
+4. ✅ IMPORTANTE PARA VIDEOS: Para cada ejercicio en 'main' y 'optional', DEBES incluir una propiedad 'videoUrl'. Esta propiedad debe ser un link de búsqueda de YouTube con el nombre del ejercicio en formato URL (ejemplo: "https://www.youtube.com/results?search_query=burpees").
 
 RESPONDE ÚNICAMENTE CON JSON VÁLIDO — sin markdown, sin backticks, sin texto previo ni posterior:
 {
@@ -68,17 +69,17 @@ RESPONDE ÚNICAMENTE CON JSON VÁLIDO — sin markdown, sin backticks, sin texto
     "intensity": "Baja | Media | Alta",
     "justification": "string — 2-3 oraciones con fundamento científico",
     "exercises": [
-      { "name": "string", "sets": "string — ej: 3x8, 4x12, 2x30s" },
-      { "name": "string", "sets": "string" },
-      { "name": "string", "sets": "string" },
-      { "name": "string", "sets": "string" }
+      { "name": "string", "sets": "string — ej: 3x8, 4x12, 2x30s", "videoUrl": "string" },
+      { "name": "string", "sets": "string", "videoUrl": "string" },
+      { "name": "string", "sets": "string", "videoUrl": "string" },
+      { "name": "string", "sets": "string", "videoUrl": "string" }
     ]
   },
   "optional": {
     "type": "string — ej: Movilidad vespertina, Tarea de recuperación",
     "desc": "string — justificación breve",
     "exercises": [
-      { "name": "string", "sets": "string" }
+      { "name": "string", "sets": "string", "videoUrl": "string" }
     ]
   }
 }`
@@ -95,16 +96,16 @@ const OFFLINE_FALLBACK = {
     intensity:     "Baja",
     justification: "En ausencia de datos actualizados, se prescribe una sesión de bajo impacto para minimizar el riesgo y preservar la homeostasis.",
     exercises: [
-      { name: "Caminata tranquila",        sets: "1x20 min"                  },
-      { name: "Movilidad articular",       sets: "2x10 reps por articulación" },
-      { name: "Respiración diafragmática", sets: "3x5 min"                   },
-      { name: "Estiramiento suave global", sets: "1x15 min"                  },
+      { name: "Caminata tranquila",        sets: "1x20 min", videoUrl: "https://www.youtube.com/results?search_query=caminata+tecnica" },
+      { name: "Movilidad articular",       sets: "2x10 reps", videoUrl: "https://www.youtube.com/results?search_query=rutina+movilidad+articular" },
+      { name: "Respiración diafragmática", sets: "3x5 min", videoUrl: "https://www.youtube.com/results?search_query=respiracion+diafragmatica+guiada" },
+      { name: "Estiramiento suave global", sets: "1x15 min", videoUrl: "https://www.youtube.com/results?search_query=estiramientos+suaves+cuerpo+completo" },
     ],
   },
   optional: {
     type: "Tarea de recuperación nocturna",
     desc: "Protocolo de higiene del sueño para optimizar el rMSSD.",
-    exercises: [{ name: "Rutina pre-sueño sin pantallas", sets: "30 min" }],
+    exercises: [{ name: "Rutina pre-sueño sin pantallas", sets: "30 min", videoUrl: "https://www.youtube.com/results?search_query=rutina+yoga+para+dormir" }],
   },
 };
 
@@ -113,7 +114,6 @@ const OFFLINE_FALLBACK = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export async function POST(req: Request) {
 
-  // ✅ FIX: Leer la variable de entorno ADENTRO del handler 
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
   if (!GEMINI_API_KEY) {
@@ -121,7 +121,6 @@ export async function POST(req: Request) {
     return NextResponse.json(OFFLINE_FALLBACK, { status: 200 });
   }
 
-  // ✅ FIX CRÍTICO: Usamos gemini-2.5-flash para máxima estabilidad 
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   let input: z.infer<typeof InputSchema>;
@@ -160,7 +159,6 @@ export async function POST(req: Request) {
       signal:  controller.signal,
       body: JSON.stringify({
         contents:         [{ parts: [{ text: prompt }] }],
-        // ✅ CORRECCIÓN APLICADA: maxOutputTokens incrementado a 4096 para permitir JSON completo
         generationConfig: { maxOutputTokens: 4096, temperature: 0.4 },
       }),
     });
@@ -201,4 +199,18 @@ export async function POST(req: Request) {
     }
     return NextResponse.json(OFFLINE_FALLBACK, { status: 200 });
   }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// HEALTH CHECK (Método GET)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export async function GET() {
+  return NextResponse.json(
+    { 
+      status: "online", 
+      sistema: "BioBalance Advisor IA",
+      mensaje: "La API está funcionando correctamente. Para generar una rutina, envía una petición POST." 
+    },
+    { status: 200 }
+  );
 }
