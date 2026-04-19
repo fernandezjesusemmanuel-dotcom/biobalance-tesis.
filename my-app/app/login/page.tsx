@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Lock, Mail, Loader2, AlertCircle, Activity } from 'lucide-react'
+import { hasCompletedPreIngreso } from '@/lib/preingreso-storage'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -34,9 +35,9 @@ export default function LoginPage() {
           : error.message
         setError(friendlyError)
       } else {
-        // Redirección con refresco para limpiar estados de auth
-        router.push('/') 
-        router.refresh()
+        const destino = hasCompletedPreIngreso() ? "/" : "/pre-ingreso";
+        router.push(destino);
+        router.refresh();
       }
     } catch (err) {
       setError("Error inesperado en la conexión")

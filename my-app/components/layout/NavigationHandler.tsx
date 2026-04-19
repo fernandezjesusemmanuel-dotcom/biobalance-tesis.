@@ -9,7 +9,11 @@ export default function NavigationHandler() {
 
   // Definimos las rutas donde la barra de navegación NO debe aparecer
   // Esto reduce la carga cognitiva durante el acceso [cite: 12, 68]
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname.startsWith('/auth')
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/pre-ingreso" ||
+    pathname.startsWith("/auth");
 
   if (isAuthPage) return null
 

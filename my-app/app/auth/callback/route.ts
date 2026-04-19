@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   // Si hay un "next", lo usamos para redirigir, si no, a la home
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get("next") ?? "/pre-ingreso";
 
   if (code) {
     // ✅ En Next.js 15, cookies() es asíncrono y requiere await
