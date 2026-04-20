@@ -104,8 +104,8 @@ Pesado)             científica                  interactiva         como nuevo 
 ### 1. Clonar e instalar dependencias
 
 ```bash
-git clone https://github.com/tu-usuario/biobalance-ai.git
-cd biobalance-ai
+git clone https://github.com/fernandezjesusemmanuel-puntocom/biobalance-tesis.git
+cd biobalance-tesis
 npm install
 ```
 
@@ -186,7 +186,7 @@ CREATE POLICY "Users manage own profile"  ON profiles         FOR ALL USING (aut
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+Abre http://localhost:3000 en tu navegador.
 
 ---
 
@@ -225,14 +225,15 @@ El archivo se genera con BOM UTF-8 para compatibilidad con Excel y se nombra aut
 
 ## 👤 Autor
 
-👤 Autor
-Desarrollado por Jesus Emmanuel Fernandez, Licenciado en Educación Física.
+Desarrollado por **Jesús Emmanuel Fernández**, Licenciado en Educación Física.  
 Maestría en Educación Física — Universidad Juan Agustín Maza — 2026
 
-📄 Licencia
+---
 
-© 2026 Jesús Emmanuel Fernández. Todos los derechos reservados.
+## 📄 Licencia
+
+© 2026 Jesús Emmanuel Fernández. Todos los derechos reservados.  
 Este repositorio es de acceso público exclusivamente con fines de evaluación académica (Universidad Juan Agustín Maza) y demostración de portafolio profesional. Queda prohibida su reproducción, distribución o uso comercial sin el consentimiento expreso y por escrito del autor. Ver archivo `LICENSE` para más detalle.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-blue)](https://linkedin.com/in/tu-usuario)
-[![GitHub](https://img.shields.io/badge/GitHub-Repositorio-black)](https://github.com/tu-usuario/biobalance-ai)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-blue)](https://www.linkedin.com/in/jesus-emmanuel-fernandez-0b9a23153)
+[![GitHub](https://img.shields.io/badge/GitHub-Repositorio-black)](https://github.com/fernandezjesusemmanuel-puntocom/biobalance-tesis)
