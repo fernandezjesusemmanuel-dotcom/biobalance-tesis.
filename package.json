@@ -1,0 +1,20 @@
+{
+  "name": "biobalance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BioBalance — delega scripts y dependencias a my-app/",
+  "scripts": {
+    "dev": "npm run dev --prefix my-app",
+    "build": "npm run build --prefix my-app",
+    "start": "npm run start --prefix my-app",
+    "lint": "npm run lint --prefix my-app",
+    "typecheck": "npm run typecheck --prefix my-app",
+    "cypress:open": "npm run cypress:open --prefix my-app",
+    "cypress:run": "npm run cypress:run --prefix my-app",
+    "test:e2e": "npm run test:e2e --prefix my-app",
+    "install:app": "npm install --prefix my-app"
+  },
+  "dependencies": {
+    "lucide-react": "^1.23.0"
+  }
+}
