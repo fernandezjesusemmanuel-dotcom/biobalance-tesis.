@@ -2,27 +2,48 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData) {
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+})
+
+export async function signIn(
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string } | null> {
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
+
+  const result = schema.safeParse({ email, password })
+  if (!result.success) {
+    return { error: 'Datos inválidos.' }
+  }
+
+  // createClient (@/lib/supabase/server) ya usa createServerClient de
+  // @supabase/ssr con cookies() + getAll/setAll — cookie sb-* compatible
+  // con el middleware. No hace falta duplicar el patrón aquí.
   const supabase = await createClient()
 
-  // Recolectamos los datos del formulario
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
-
-  // Intentamos iniciar sesión
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const { error } = await supabase.auth.signInWithPassword({
+    email: result.data.email,
+    password: result.data.password,
+  })
 
   if (error) {
-    // Si falla, podrías redirigir a una página de error o volver al login
-    // Por ahora, redirigimos al login con un parámetro de error (opcional)
-    redirect('/login?error=true')
+    if (error.message === 'Invalid login credentials') {
+      return { error: 'Credenciales inválidas. Verifica tu correo y contraseña.' }
+    }
+    if (error.message.toLowerCase().includes('email not confirmed')) {
+      return { error: 'Debes confirmar tu correo antes de iniciar sesión.' }
+    }
+    return { error: error.message }
   }
 
-  // Si todo sale bien:
-  revalidatePath('/', 'layout') // Actualizamos la app
-  redirect('/') // Mandamos al usuario al Dashboard
+  revalidatePath('/', 'layout')
+
+  const redirectTo = (formData.get('redirectedFrom') as string) || '/'
+  redirect(redirectTo)
 }

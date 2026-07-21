@@ -1,49 +1,30 @@
 'use client'
 
-import { Suspense, useState, type FormEvent } from 'react'
+import { Suspense, useActionState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useFormStatus } from 'react-dom'
 import { AlertCircle, Loader2, Lock, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from '@/app/login/actions'
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? 'Iniciando sesión...' : 'Ingresar'}
+    </Button>
+  )
+}
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
-
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [state, formAction] = useActionState(signIn, null)
 
   const redirectedFrom = searchParams.get('redirectedFrom') ?? '/'
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (signInError) {
-      setError(
-        signInError.message === 'Invalid login credentials'
-          ? 'Credenciales inválidas. Verifica tu correo y contraseña.'
-          : signInError.message
-      )
-      setLoading(false)
-      return
-    }
-
-    router.replace(redirectedFrom)
-    router.refresh()
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4 py-10">
@@ -55,7 +36,9 @@ function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" action={formAction}>
+            <input type="hidden" name="redirectedFrom" value={redirectedFrom} />
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-stone-700" htmlFor="email">
                 Correo electrónico
@@ -64,11 +47,10 @@ function LoginForm() {
                 <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="usuario@institucion.edu"
                   className="pl-10"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </div>
@@ -82,26 +64,23 @@ function LoginForm() {
                 <Lock className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
                   className="pl-10"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
                   required
                 />
               </div>
             </div>
 
-            {error ? (
+            {state?.error ? (
               <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
+                <span>{state.error}</span>
               </div>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ingresar'}
-            </Button>
+            <SubmitButton />
           </form>
 
           <p className="mt-6 text-center text-sm text-stone-600">

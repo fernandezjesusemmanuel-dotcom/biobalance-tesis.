@@ -1,14 +1,11 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import AIChat from "@/components/dashboard/AIChat"; 
-import BottomNav from "@/components/dashboard/BottomNav"; 
+import AIChat from "../dashboard/AIChat"; 
+import BottomNav from "../dashboard/BottomNav"; 
 
 export default function NavigationHandler() {
   const pathname = usePathname()
-
-  // Definimos las rutas donde la barra de navegación NO debe aparecer
-  // Esto reduce la carga cognitiva durante el acceso [cite: 12, 68]
   const isAuthPage =
     pathname === "/login" ||
     pathname === "/register" ||
