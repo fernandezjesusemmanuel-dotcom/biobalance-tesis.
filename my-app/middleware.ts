@@ -1,15 +1,19 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const DASHBOARD_PREFIXES = ['/history', '/log', '/checkin', '/workout', '/pre-ingreso', '/academic']
 const AUTH_PREFIXES = ['/login', '/registro', '/register', '/auth']
+const PUBLIC_PATHS = ['/login', '/register', '/registro', '/auth', '/']
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+  let response = NextResponse.next({ request })
+
+  const pathname = request.nextUrl.pathname
+
+  // Regla 1 — early return: rutas públicas no entran a guardias de protección
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return response
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -18,24 +22,18 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Regla 3 — cookies con getAll/setAll
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value
+      getAll() {
+        return request.cookies.getAll()
       },
-      set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({ name, value, ...options })
-        response = NextResponse.next({
-          request: { headers: request.headers },
-        })
-        response.cookies.set({ name, value, ...options })
-      },
-      remove(name: string, options: CookieOptions) {
-        request.cookies.set({ name, value: '', ...options })
-        response = NextResponse.next({
-          request: { headers: request.headers },
-        })
-        response.cookies.set({ name, value: '', ...options })
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        response = NextResponse.next({ request })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        )
       },
     },
   })
@@ -44,26 +42,19 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-  const isAuthRoute = AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  const isDashboardRoute = DASHBOARD_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  const matchesPath = (prefix: string) =>
+    pathname === prefix || pathname.startsWith(`${prefix}/`)
 
-  if (!user && isDashboardRoute) {
+  const isAuthPath = AUTH_PREFIXES.some(matchesPath)
+  const isProtected = DASHBOARD_PREFIXES.some(matchesPath)
+
+  // Regla 2 — guardia de rutas protegidas; redirectedFrom nunca es ruta auth
+  if (!user && isProtected) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirectedFrom', pathname)
+    if (!isAuthPath) {
+      loginUrl.searchParams.set('redirectedFrom', pathname)
+    }
     return NextResponse.redirect(loginUrl)
-  }
-
-  if (user && (pathname === '/login' || pathname === '/registro' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
-  if (!user && pathname === '/') {
-    return response
-  }
-
-  if (!user && !isAuthRoute && pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
