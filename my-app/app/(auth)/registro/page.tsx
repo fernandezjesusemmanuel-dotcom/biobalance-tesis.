@@ -1,57 +1,31 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useActionState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useFormStatus } from 'react-dom'
 import { AlertCircle, CheckCircle2, Loader2, Lock, Mail, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { createClient } from '@/lib/supabase/client'
+import { signUp } from '@/app/registro/actions'
 import type { RolUsuario } from '@/types/database.types'
 
 const ROLES: RolUsuario[] = ['docente', 'alumno']
 
+function SubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear cuenta'}
+    </Button>
+  )
+}
+
 export default function RegistroPage() {
-  const router = useRouter()
-  const supabase = createClient()
+  const [state, formAction] = useActionState(signUp, null)
 
-  const [nombreCompleto, setNombreCompleto] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rol, setRol] = useState<RolUsuario>('alumno')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          nombre_completo: nombreCompleto,
-          rol,
-        },
-      },
-    })
-
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
-      return
-    }
-
-    setSuccess(true)
-    setLoading(false)
-  }
-
-  if (success) {
+  if (state && 'success' in state) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4 py-10">
         <Card className="w-full max-w-md rounded-3xl border-stone-200 shadow-xl">
@@ -59,12 +33,10 @@ export default function RegistroPage() {
             <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600" />
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-stone-900">Registro enviado</h1>
-              <p className="text-sm text-stone-600">
-                Revisa tu correo para confirmar la cuenta y activar tu acceso a BioBalance.
-              </p>
+              <p className="text-sm text-stone-600">{state.success}</p>
             </div>
-            <Button className="w-full" onClick={() => router.push('/login')}>
-              Volver al login
+            <Button className="w-full" asChild>
+              <Link href="/login">Volver al login</Link>
             </Button>
           </CardContent>
         </Card>
@@ -82,7 +54,7 @@ export default function RegistroPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" action={formAction}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-stone-700" htmlFor="nombreCompleto">
                 Nombre completo
@@ -91,11 +63,10 @@ export default function RegistroPage() {
                 <User className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
                 <Input
                   id="nombreCompleto"
+                  name="nombreCompleto"
                   type="text"
                   placeholder="Nombre y apellidos"
                   className="pl-10"
-                  value={nombreCompleto}
-                  onChange={(event) => setNombreCompleto(event.target.value)}
                   required
                 />
               </div>
@@ -109,11 +80,10 @@ export default function RegistroPage() {
                 <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
                 <Input
                   id="registroEmail"
+                  name="email"
                   type="email"
                   placeholder="usuario@institucion.edu"
                   className="pl-10"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </div>
@@ -127,11 +97,10 @@ export default function RegistroPage() {
                 <Lock className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
                 <Input
                   id="registroPassword"
+                  name="password"
                   type="password"
                   placeholder="Mínimo 6 caracteres"
                   className="pl-10"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
                   minLength={6}
                   required
                 />
@@ -144,9 +113,9 @@ export default function RegistroPage() {
               </label>
               <select
                 id="rol"
+                name="rol"
                 className="flex h-10 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-offset-white transition placeholder:text-stone-500 focus-visible:ring-2 focus-visible:ring-teal-500"
-                value={rol}
-                onChange={(event) => setRol(event.target.value as RolUsuario)}
+                defaultValue="alumno"
               >
                 {ROLES.map((roleOption) => (
                   <option key={roleOption} value={roleOption}>
@@ -156,16 +125,14 @@ export default function RegistroPage() {
               </select>
             </div>
 
-            {error ? (
+            {state && 'error' in state ? (
               <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
+                <span>{state.error}</span>
               </div>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear cuenta'}
-            </Button>
+            <SubmitButton />
           </form>
 
           <p className="mt-6 text-center text-sm text-stone-600">

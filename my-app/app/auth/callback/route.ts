@@ -1,44 +1,41 @@
-// Archivo: app/auth/callback/route.ts
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = request.nextUrl
   const code = searchParams.get('code')
-  // Si hay un "next", lo usamos para redirigir, si no, a la home
-  const next = searchParams.get("next") ?? "/pre-ingreso";
 
-  if (code) {
-    // ✅ En Next.js 15, cookies() es asíncrono y requiere await
-    const cookieStore = await cookies()
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options })
-          },
-          remove(name: string, options: CookieOptions) {
-            cookieStore.set({ name, value: '', ...options })
-          },
-        },
-      }
-    )
-
-    // Intercambiamos el código por una sesión real
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
-    }
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=sin_codigo`)
   }
 
-  // Si algo falla, lo mandamos al login con un parámetro de error
-  return NextResponse.redirect(`${origin}/login?error=auth-code-error`)
+  let response = NextResponse.redirect(`${origin}/`)
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.redirect(`${origin}/`)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (error) {
+    console.error('❌ exchangeCodeForSession error:', error.message)
+    return NextResponse.redirect(`${origin}/login?error=confirmacion_fallida`)
+  }
+
+  return response
 }
