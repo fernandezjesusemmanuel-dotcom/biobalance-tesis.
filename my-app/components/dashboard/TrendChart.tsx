@@ -25,7 +25,7 @@ export default function TrendChart({ data }: { data: TrendPoint[] }) {
                 <p className="text-xs text-stone-400 mb-4 max-w-[250px]">
                     Registra al menos 2 días para ver tu evolución clínica.
                 </p>
-                <Link href="/log">
+                <Link href="/checkin">
                     <button className="text-xs bg-teal-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-teal-700 transition-colors shadow-sm">
                         <PlusCircle className="h-3 w-3" /> Registrar Hoy
                     </button>

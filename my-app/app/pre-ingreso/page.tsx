@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { PreIngresoScreen } from "@/components/onboarding/PreIngresoScreen";
+import { createClient } from "@/lib/supabase/client";
 import {
   hasCompletedPreIngreso,
   markPreIngresoCompleted,
@@ -18,8 +19,18 @@ export default function PreIngresoPage() {
     }
   }, [router]);
 
-  const handleIniciarTest = () => {
+  const handleIniciarTest = async () => {
     markPreIngresoCompleted();
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ pre_ingreso_completado: true })
+        .eq("id", user.id);
+    }
+
     router.push("/");
     router.refresh();
   };

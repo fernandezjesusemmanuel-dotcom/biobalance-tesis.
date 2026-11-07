@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const DASHBOARD_PREFIXES = ['/history', '/log', '/checkin', '/workout', '/pre-ingreso', '/academic']
+const DASHBOARD_PREFIXES = ['/history', '/log', '/checkin', '/workout', '/pre-ingreso', '/academic', '/onboarding']
 const AUTH_PREFIXES = ['/login', '/registro', '/register', '/auth']
 const PUBLIC_PATHS = ['/login', '/register', '/registro', '/auth', '/']
 

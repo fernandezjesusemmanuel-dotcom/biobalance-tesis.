@@ -52,6 +52,7 @@ type ProfileRow = {
   fitness_level: number | null
   sleep_quality_baseline: number | null
   avatar_url: string | null
+  pre_ingreso_completado: boolean | null
   updated_at: string | null
 }
 
@@ -160,6 +161,7 @@ export type Database = {
           caregiver_status?: string | null
           fitness_level?: number | null
           sleep_quality_baseline?: number | null
+          pre_ingreso_completado?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -171,6 +173,7 @@ export type Database = {
           caregiver_status?: string | null
           fitness_level?: number | null
           sleep_quality_baseline?: number | null
+          pre_ingreso_completado?: boolean | null
           updated_at?: string | null
         }
         Relationships: []

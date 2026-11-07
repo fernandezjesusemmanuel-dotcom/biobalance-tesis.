@@ -49,8 +49,12 @@ export default async function Dashboard() {
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
-    .from('profiles').select('first_name, avatar_url, age').eq('id', user.id).single()
+    .from('profiles')
+    .select('first_name, avatar_url, age, pre_ingreso_completado')
+    .eq('id', user.id)
+    .single()
   if (!profile?.first_name) redirect('/onboarding')
+  if (!profile?.pre_ingreso_completado) redirect('/pre-ingreso')
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -166,7 +170,7 @@ export default async function Dashboard() {
             </p>
             {/* CTA directo al log si aún no hizo check-in */}
             {!hasCheckedIn && (
-              <Link href="/log">
+              <Link href="/checkin">
                 <button className="mt-6 bg-teal-600 text-white text-sm font-bold px-6 py-3 rounded-2xl hover:bg-teal-700 transition-colors">
                   Completar Check-in
                 </button>

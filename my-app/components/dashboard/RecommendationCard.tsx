@@ -63,7 +63,7 @@ export default function RecommendationCard({ dailyLog }: Props) {
                     </Link>
 
                     {/* BOTÓN 2: FINALIZAR (EL QUE FALTABA) */}
-                    <Link href="/log" className="w-full">
+                    <Link href="/checkin" className="w-full">
                         <Button variant="outline" className={`w-full font-bold h-14 rounded-xl border-2 flex items-center justify-center gap-3 transition-transform active:scale-95 ${isRecovery ? 'border-teal-200 text-teal-700 bg-white/40' : 'border-stone-700 text-stone-300 bg-transparent hover:bg-stone-800'}`}>
                             <CheckCircle2 className="h-5 w-5" /> COMPLETAR REGISTRO DIARIO
                         </Button>
